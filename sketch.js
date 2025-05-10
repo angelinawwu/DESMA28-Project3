@@ -1,10 +1,9 @@
-var radius;
-var numPoints;
-var angle;
-var blobObj = []; // array of objects that holds blob attributes
-var yellow;
-var green;
-var orange;
+var radius, numPoints, angle;
+var blobObj = [];
+var nextBlobObj = [];
+var yellow, green, orange;
+var updateTargets = true;
+var lerpAmount = 0.1;
 function setup() {
     createCanvas(windowWidth, windowHeight);
 
@@ -30,16 +29,37 @@ function drawBlob(blobColor) {
     blob.push();
     blob.translate(width * 0.5, height * 0.5);
     blob.beginShape();
-    blobObj = [];
+
+    if (updateTargets || blobObj.length === 0) {
+        nextBlobObj = [];
+        for (let i=0; i<numPoints; i++) {
+            let randRadius = min(radius, radius+random(-50, 50));
+            nextBlobObj.push({
+                "radius": randRadius,
+                "x": randRadius * cos(angle * i),
+                "y": randRadius * sin(angle * i)
+            });
+        }
+        updateTargets = false;
+
+        if (blobObj.length === 0) {
+            blobObj = nextBlobObj;
+        }
+    }
+
     for (let i = 0; i < numPoints; i++) {
-        let randRadius = min(radius, radius+random(-50, 50));
-        blobObj.push({
-         "radius": randRadius,
-         "x": randRadius * cos(angle * i),
-         "y": randRadius * sin(angle * i)
-        });
+        // Create positions if needed
+    if (!blobObj[i]) {
+        blobObj[i] = nextBlobObj[i];
+    }
+    
+    // Interpolate toward targets
+    blobObj[i].x = lerp(blobObj[i].x, nextBlobObj[i].x, lerpAmount);
+    blobObj[i].y = lerp(blobObj[i].y, nextBlobObj[i].y, lerpAmount);
+    
+    // Draw vertices
         blob.curveVertex(blobObj[i].x, blobObj[i].y);
-       }
+    }
     blob.curveVertex(blobObj[0].x, blobObj[0].y);
     blob.curveVertex(blobObj[1].x, blobObj[1].y);
     blob.curveVertex(blobObj[2].x, blobObj[2].y);
@@ -59,11 +79,17 @@ function drawCircle() {
 }
 
 function draw() {
-    background(green);    
+    background(green);   
+    
+    if (frameCount % 20 === 0) {
+        updateTargets = true;
+    }
+
+    blob.clear();
+    blurCircle.clear();
 
     // Draw blob
     drawBlob(yellow);
-    drawBlob(green);
 
     // Draw orange circle
     drawCircle();
